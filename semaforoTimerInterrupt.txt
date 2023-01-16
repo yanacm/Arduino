@@ -1,0 +1,72 @@
+int luzVerm = 15;
+int luzAmar = 2;
+int luzVerd = 4;
+	
+hw_timer_t* timer = NULL;
+volatile int interruptCounter;
+int totalInterruptCounter;
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+
+void IRAM_ATTR onTimer() {
+  portENTER_CRITICAL_ISR(&timerMux);
+  interruptCounter++;
+  portEXIT_CRITICAL_ISR(&timerMux);
+ 
+}
+
+void sinalVerm (){
+  digitalWrite(luzVerm, HIGH);
+  digitalWrite(luzAmar, LOW);
+  digitalWrite(luzVerd, LOW);
+}
+
+void sinalAmar (){
+  digitalWrite(luzVerm, LOW);
+  digitalWrite(luzAmar, HIGH);
+  digitalWrite(luzVerd, LOW);
+}
+
+void sinalVerd (){
+  digitalWrite(luzVerm, LOW);
+  digitalWrite(luzAmar, LOW);
+  digitalWrite(luzVerd, HIGH);
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(luzVerm, OUTPUT);
+  pinMode(luzAmar, OUTPUT);
+  pinMode(luzVerd, OUTPUT);
+
+  timer = timerBegin(0, 80, true);
+  timerAttachInterrupt(timer, &onTimer, true);
+  timerAlarmWrite(timer, 1000000, true);
+  timerAlarmEnable(timer);
+}
+
+void loop() {
+  if (interruptCounter > 0) {
+ 
+    portENTER_CRITICAL(&timerMux);
+    interruptCounter--;
+    portEXIT_CRITICAL(&timerMux);
+ 
+    totalInterruptCounter++;
+ 
+    if(totalInterruptCounter == 1) {
+      sinalVerm();
+      Serial.println("Sinal vermelho ligado");
+      Serial.println(totalInterruptCounter);
+    } else if(totalInterruptCounter == 2) {
+      sinalAmar();
+      Serial.println("Sinal amarelo ligado");
+      Serial.println(totalInterruptCounter);
+    } else if(totalInterruptCounter == 3) {
+      sinalVerd();
+      Serial.println("Sinal verde ligado");
+      Serial.println(totalInterruptCounter);
+      totalInterruptCounter = 0;
+    }
+  }
+  
+}

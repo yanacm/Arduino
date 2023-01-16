@@ -1,0 +1,85 @@
+#include <WiFi.h>                               //biblioteca para esp32
+#include <PubSubClient.h>                       //biblioteca para funções do protocolo Pub-Sub
+const char* ssid = "moto g(8) plus 7727";       //string com nome da rede onde o esp vai se conectar
+const char* password =  "83a0a8f4b437";         //string com a senha da rede. Deixar em branco caso a rede seja aberta
+const char* mqttServer = "broker.hivemq.com";   //string com a url do Broker que vai receber e transmitir as mensagens
+const int   mqttPort = 1883;                    //inteiro com o número da porta utilizada na conexão
+const char* mqttUser = "";                      //string com nome de usuário no Broker, quando for necessário
+const char* mqttPassword = "";                  //string com senha do Broker, quando necessário
+const char* topico_teste = "esp/rele";          //tópico a ser assinado
+const char* topico_envia = "esp/pot";         //tópico para publicação 
+char mensagem[30];
+
+WiFiClient    espClient;                      //criação do objeto espClient do tipo WiFiClient
+PubSubClient  client(espClient);
+
+const int rele = 33;
+
+void setup() {
+  pinMode(rele, OUTPUT);            
+  Serial.begin(115200);                   
+  WiFi.begin(ssid, password);             
+
+  while (WiFi.status() != WL_CONNECTED)   
+  {
+    delay(500);                           
+    Serial.println("Conectando.."); 
+  }
+
+  Serial.println("Conectado na rede WiFi!");  
+  client.setCallback(callback);               
+}
+
+void loop() {
+
+  if(!client.connected()){
+    reconectabroker();                      
+  }
+
+  client.loop();
+}
+
+void reconectabroker()
+{
+  client.setServer(mqttServer, mqttPort);
+  while (!client.connected())
+  {
+    Serial.println("Conectando ao broker MQTT...");
+    if (client.connect("", mqttUser, mqttPassword ))
+    {
+      Serial.println("Conectado ao broker!");
+      client.subscribe(topico_teste);               
+    }
+    else
+    {
+      Serial.print("Falha na conexao ao broker - Estado: ");
+      Serial.print(client.state());
+      delay(4000);
+    }
+  }
+}
+
+void callback(char* topic, byte* message, unsigned int length) {
+  Serial.println("Chegou mensagem no topico: ");
+  Serial.print(topic);
+  Serial.print(". Mensagem: ");
+  String messageTemp;
+  
+  for (int i = 0; i < length; i++) {  
+    Serial.print((char)message[i]);
+    messageTemp += (char)message[i];
+  }
+  Serial.println();
+
+  if (String(topic) == topico_teste) {
+    Serial.print("Trocando o estado do Relé para: ");
+    if(messageTemp == "on"){
+      Serial.println("Ligado");
+      digitalWrite(rele, HIGH);
+    }
+    else if(messageTemp == "off"){
+      Serial.println("Desligado");
+      digitalWrite(rele, LOW);
+    }else{}
+  }
+}

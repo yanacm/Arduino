@@ -1,0 +1,40 @@
+#define led_esq 32
+#define led_dir 25
+
+int led1 = LOW;
+int led2 = LOW;
+
+void setup() {
+  pinMode(led_dir, OUTPUT);
+  pinMode(led_esq, OUTPUT);
+  Serial.begin(9600);
+  Serial.println("escolha a led");
+}
+
+void loop() {
+  if(Serial.available() > 0) {
+    char entrada = Serial.read();
+    if(entrada == 'e' && led1 == LOW) {
+      led1 = HIGH;
+    } else if (entrada == 'd' && led2 == LOW){
+      led2 = HIGH;
+    }
+
+    if(led1 == HIGH) {
+      digitalWrite(led_esq, led1);
+      delay(300);
+      led1 = LOW;
+      digitalWrite(led_esq, led1);
+      delay(300);
+    }
+
+    if(led2 == HIGH) {
+      digitalWrite(led_dir, led2);
+      delay(300);
+      led2 = LOW;
+      digitalWrite(led_dir, led2);
+      delay(300);
+    }
+  } 
+  delay(50);
+}
